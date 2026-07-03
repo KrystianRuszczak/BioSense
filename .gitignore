@@ -11,7 +11,9 @@ sdkconfig.old
 # Local secrets
 main/private/
 **/biosense_secrets.h
+**/biosense_secrets.hpp
 **/secrets.h
+**/secrets.hpp
 *.pem
 *.key
 *.crt
