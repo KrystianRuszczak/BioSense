@@ -8,8 +8,10 @@
 #define PIN_LO_PLUS 35
 #define PIN_LO_MINUS 34
 
+// I2C PARAMETERS
 #define I2C_SDA 21
 #define I2C_SCL 22
+#define I2C_MASTER_FREQ_HZ 100000
 
 #define PIN_BATT 33
 #define PIN_BUZZER 14

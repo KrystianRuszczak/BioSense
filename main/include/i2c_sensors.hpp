@@ -1,0 +1,80 @@
+#pragma once
+
+#include <cstdint>
+#include <cstddef>
+
+#include "esp_err.h"
+#include "driver/i2c_master.h"
+#include "driver/i2c_slave.h"
+
+namespace biosense
+{
+
+struct i2c_readings
+{
+
+    uint16_t mlx_raw_obj = 0;
+    uint16_t mlx_raw_amb = 0;
+
+    float temp_obj = 0;
+    float temp_amb = 0;
+
+    bool mlx_ok = false;
+    bool mlx_valid  = false;
+
+    int max_bpm = 0;
+    
+    float max_spo2 = 0.0f;
+    bool max_spo2_valid = false;
+    float max_spo2_raw = 0.0f;
+    
+    bool max_finger = false;
+    bool max_ok = false;
+    
+    uint32_t max_red = 0.0f;
+    uint32_t max_ired = 0.0f;
+};
+
+class i2c_sensors
+{
+public:
+    esp_err_t init();
+
+    esp_err_t update(uint64_t now_ms);
+
+    const i2c_readings& readings() const;
+private:
+
+    uint32_t max_ired_min_ = 0xFFFFFFFF;
+    uint32_t max_ired_max_ = 0;
+    bool max_signal_above_threshold_ = false;
+    uint64_t max_last_beat_ms_ = 0;
+
+    esp_err_t init_bus();
+
+    esp_err_t init_mlx();
+    esp_err_t update_mlx(uint64_t now_ms);
+    esp_err_t read_mlx_word(uint8_t reg, uint16_t* value);
+
+    esp_err_t init_max();
+    esp_err_t update_max(uint64_t now_ms);
+
+    esp_err_t write_reg(i2c_master_dev_handle_t dev, uint8_t reg, uint8_t value);
+    esp_err_t read_reg(i2c_master_dev_handle_t dev, uint8_t reg, uint8_t* value);
+    esp_err_t read_regs(i2c_master_dev_handle_t dev, uint8_t reg, uint8_t* data, size_t len);
+
+    esp_err_t read_max_fifo_sample(uint32_t* red, uint32_t* ired);
+    void process_max_sample(uint32_t red, uint32_t ired, uint64_t now_ms);
+
+    i2c_master_bus_handle_t bus_handle_ = nullptr;
+    i2c_master_dev_handle_t mlx_handle_ = nullptr;
+    i2c_master_dev_handle_t max_handle_ = nullptr;
+
+    i2c_readings readings_ {};
+
+    uint64_t last_mlx_ms_ = 0;
+    uint64_t last_max_ms_ = 0;
+};
+
+
+} // namespace biosense
