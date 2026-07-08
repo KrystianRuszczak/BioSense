@@ -12,6 +12,8 @@
 #include "driver/i2c_master.h"
 #include "driver/gpio.h"
 
+#include "heartRate.hpp"
+
 namespace biosense
 {
 
@@ -21,7 +23,7 @@ static constexpr uint8_t MLX_ADDR = 0x5A;
 static constexpr uint8_t MAX_ADDR = 0x57;
 
 static constexpr uint64_t MLX_INTERVAL_MS = 500;
-static constexpr uint64_t MAX_INTERVAL_MS = 20;
+static constexpr uint64_t MAX_INTERVAL_MS = 10;
 
 static constexpr uint8_t MLX_REG_TA = 0x06;
 static constexpr uint8_t MLX_REG_TOBJ = 0x07;
@@ -272,10 +274,29 @@ void i2c_sensors::process_max_sample(uint32_t red, uint32_t ired, uint64_t now_m
     readings_.max_red = red;
     readings_.max_ired = ired;
 
-    bool finger_present = ired > 20000 &&
-        red > 20000 &&
-        ired < 250000 &&
-        red < 250000;
+    bool finger_on_condition = 
+        ired > 30000 &&
+        red > 30000 &&
+        ired < 230000 &&
+        red < 230000;
+
+    bool finger_off_condition = 
+        ired < 15000 ||
+        red < 15000 ||
+        ired > 260000 ||
+        red > 260000;
+
+    if (!max_finger_state_ && finger_on_condition)
+    {
+        max_finger_state_ = true;
+    }
+    
+    if (max_finger_state_ && finger_off_condition)
+    {
+        max_finger_state_ = false;
+    }
+    
+    bool finger_present = max_finger_state_;
 
     readings_.max_finger = finger_present;
 
@@ -286,47 +307,51 @@ void i2c_sensors::process_max_sample(uint32_t red, uint32_t ired, uint64_t now_m
         readings_.max_spo2_valid = false;
         readings_.max_spo2_raw = 0;
 
-        max_ired_min_ = 0xFFFFFFFF;
-        max_ired_max_ = 0;
-        max_signal_above_threshold_ = false;
         max_last_beat_ms_ = 0;
+        
+        max_bpm_history_pos_ = 0;
+        max_bpm_history_count_ = 0;
+
+        for (uint8_t i = 0; i < MAX_BPM_AVG_SIZE; i++)
+        {
+            max_bpm_history_[i] = 0;
+        }
+
+        resetBeatDetector();
 
         return;
     }
-    
-    if (ired < max_ired_min_)
-    { max_ired_min_ = ired; }
-    if (ired > max_ired_max_)
-    { max_ired_max_ = ired; }
 
-    max_ired_min_ = static_cast<uint32_t>(0.999f * max_ired_min_ + 0.001f * ired);
-    max_ired_max_ = static_cast<uint32_t>(0.999f * max_ired_max_ + 0.001f * ired);
-
-    uint32_t amplitude = max_ired_max_ - max_ired_min_;
-
-    if (amplitude < 1000)
-    {
-        return;
-    }
-
-    uint32_t threshold = max_ired_min_ + static_cast<uint32_t>(amplitude * 0.60f);
-
-    bool above = ired > threshold;
-
-    if (above && !max_signal_above_threshold_)
+    if (checkForBeat(static_cast<int32_t>(ired)))
     {
         uint64_t delta_ms = now_ms - max_last_beat_ms_;
-
-        if (max_last_beat_ms_ != 0 && delta_ms > 300 && delta_ms < 2000)
-        {
-            readings_.max_bpm = static_cast<int>(60000ULL / delta_ms);
-        }
-        
         max_last_beat_ms_ = now_ms;
+
+        if (delta_ms > 300 && delta_ms < 2000)
+        {
+            int bpm = static_cast<int>(60000ULL / delta_ms);
+
+            if (bpm >= 30 && bpm <= 220)
+            {
+                max_bpm_history_[max_bpm_history_pos_] = bpm;
+                max_bpm_history_pos_ = static_cast<uint8_t>((max_bpm_history_pos_ + 1) % MAX_BPM_AVG_SIZE);
+
+                if (max_bpm_history_count_ < MAX_BPM_AVG_SIZE)
+                {
+                    max_bpm_history_count_++;
+                }
+                
+                int sum = 0;
+                for (uint8_t i = 0; i < max_bpm_history_count_; i++)
+                {
+                    sum += max_bpm_history_[i];
+                }
+                
+                readings_.max_bpm = sum / max_bpm_history_count_;   
+            }   
+        }
     }
     
-    max_signal_above_threshold_ = above;
-
     readings_.max_spo2_valid = false;
     readings_.max_spo2 = 0.0f;
     readings_.max_spo2_raw = 0;
@@ -389,8 +414,17 @@ esp_err_t i2c_sensors::update_max(uint64_t now_ms)
             ESP_LOGW(TAG, "MAX FIFO sample read failed: %s", esp_err_to_name(err));
             return err;
         }
+
+        uint64_t sample_ms = now_ms;
+
+        if (samples_available > 1)
+        {
+            uint32_t offset_ms = static_cast<uint32_t>((samples_available - 1 - i) *10);
+            sample_ms = now_ms > offset_ms ? now_ms - offset_ms : now_ms;
+        }
         
-        process_max_sample(red, ired, now_ms);
+        
+        process_max_sample(red, ired, sample_ms);
     }
 
     return ESP_OK;

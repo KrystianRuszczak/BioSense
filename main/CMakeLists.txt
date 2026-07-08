@@ -8,10 +8,12 @@ idf_component_register(
         "signal/ecg_processor.cpp"
         "telemetry/telemetry.cpp"
         "sensors/i2c_sensors.cpp"
+        "third_party/max3010x_algorithms/heartRate.cpp"
 
     INCLUDE_DIRS
         "include"
         "private"
+        "third_party/max3010x_algorithms"
 
     REQUIRES
         esp_wifi

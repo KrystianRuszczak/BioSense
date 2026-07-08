@@ -5,8 +5,6 @@
 
 #include "esp_err.h"
 #include "driver/i2c_master.h"
-#include "driver/i2c_slave.h"
-
 namespace biosense
 {
 
@@ -26,13 +24,13 @@ struct i2c_readings
     
     float max_spo2 = 0.0f;
     bool max_spo2_valid = false;
-    float max_spo2_raw = 0.0f;
+    int max_spo2_raw = 0.0f;
     
     bool max_finger = false;
     bool max_ok = false;
     
-    uint32_t max_red = 0.0f;
-    uint32_t max_ired = 0.0f;
+    uint32_t max_red = 0;
+    uint32_t max_ired = 0;
 };
 
 class i2c_sensors
@@ -45,10 +43,14 @@ public:
     const i2c_readings& readings() const;
 private:
 
-    uint32_t max_ired_min_ = 0xFFFFFFFF;
-    uint32_t max_ired_max_ = 0;
-    bool max_signal_above_threshold_ = false;
     uint64_t max_last_beat_ms_ = 0;
+    bool max_finger_state_ = false;
+    
+    static constexpr uint8_t MAX_BPM_AVG_SIZE = 4;
+
+    int max_bpm_history_[MAX_BPM_AVG_SIZE] = {0, 0, 0, 0};
+    uint8_t max_bpm_history_pos_ = 0;
+    uint8_t max_bpm_history_count_ = 0;
 
     esp_err_t init_bus();
 
