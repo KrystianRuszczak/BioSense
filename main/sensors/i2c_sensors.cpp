@@ -13,6 +13,7 @@
 #include "driver/gpio.h"
 
 #include "heartRate.hpp"
+#include "spo2.hpp"
 
 namespace biosense
 {
@@ -269,6 +270,81 @@ esp_err_t i2c_sensors::read_max_fifo_sample(uint32_t* red, uint32_t* ired)
     return ESP_OK;
 }
 
+void i2c_sensors::reset_spo2_state()
+{
+    spo2_sample_count_ = 0;
+    spo2_decimation_count_ = 0;
+
+    for (uint8_t i = 0; i < SPO2_BUFFER_SIZE; i++)
+    {
+        spo2_ired_buffer_[i] = 0;
+        spo2_red_buffer_[i] = 0;
+    }
+    
+    readings_.max_spo2 = 0.0f;
+    readings_.max_spo2_raw = 0;
+    readings_.max_spo2_valid = false;
+}
+
+void i2c_sensors::process_spo2_sample(uint32_t red, uint32_t ired)
+{
+    spo2_decimation_count_++;
+
+    if (spo2_decimation_count_ < SPO2_DECIMATION)
+    {
+        return;
+    }
+    
+    spo2_decimation_count_ = 0;
+
+    spo2_ired_buffer_[spo2_sample_count_] = ired;
+    spo2_red_buffer_[spo2_sample_count_] = red;
+    spo2_sample_count_++;
+
+    if (spo2_sample_count_ < SPO2_BUFFER_SIZE)
+    {
+        return;
+    }
+    
+    int32_t spo2 = 0;
+    int8_t spo2_valid = 0;
+    int32_t algorithm_hr = 0;
+    int8_t algorithm_hr_valid = 0;
+
+    maxim_heart_rate_and_oxygen_saturation(
+        spo2_ired_buffer_,
+        SPO2_BUFFER_SIZE,
+        spo2_red_buffer_,
+        &spo2,
+        &spo2_valid,
+        &algorithm_hr,
+        &algorithm_hr_valid
+    );
+
+    readings_.max_spo2_raw = static_cast<int>(spo2);
+
+    if (spo2_valid && spo2 >= 70 && spo2 <= 100)
+    {
+        readings_.max_spo2 = static_cast<float>(spo2);
+        readings_.max_spo2_valid = true;
+    }
+    else
+    {
+        readings_.max_spo2 = 0.0f;
+        readings_.max_spo2_valid = false;
+    }
+    
+    constexpr uint8_t keep_count = SPO2_BUFFER_SIZE - SPO2_STEP_SIZE;
+
+    for (uint8_t i = 0; i < keep_count; i++)
+    {
+        spo2_ired_buffer_[i] = spo2_ired_buffer_[i + SPO2_STEP_SIZE];
+        spo2_red_buffer_[i] = spo2_red_buffer_[i + SPO2_STEP_SIZE];
+    }
+    
+    spo2_sample_count_ = keep_count;
+}
+
 void i2c_sensors::process_max_sample(uint32_t red, uint32_t ired, uint64_t now_ms)
 {
     readings_.max_red = red;
@@ -303,9 +379,6 @@ void i2c_sensors::process_max_sample(uint32_t red, uint32_t ired, uint64_t now_m
     if (!finger_present)
     {
         readings_.max_bpm = 0;
-        readings_.max_spo2 = 0.0f;
-        readings_.max_spo2_valid = false;
-        readings_.max_spo2_raw = 0;
 
         max_last_beat_ms_ = 0;
         
@@ -318,6 +391,7 @@ void i2c_sensors::process_max_sample(uint32_t red, uint32_t ired, uint64_t now_m
         }
 
         resetBeatDetector();
+        reset_spo2_state();
 
         return;
     }
@@ -342,6 +416,7 @@ void i2c_sensors::process_max_sample(uint32_t red, uint32_t ired, uint64_t now_m
                 }
                 
                 int sum = 0;
+                
                 for (uint8_t i = 0; i < max_bpm_history_count_; i++)
                 {
                     sum += max_bpm_history_[i];
@@ -352,9 +427,7 @@ void i2c_sensors::process_max_sample(uint32_t red, uint32_t ired, uint64_t now_m
         }
     }
     
-    readings_.max_spo2_valid = false;
-    readings_.max_spo2 = 0.0f;
-    readings_.max_spo2_raw = 0;
+    process_spo2_sample(red, ired);
 }
 
 esp_err_t i2c_sensors::update_max(uint64_t now_ms)

@@ -52,6 +52,19 @@ private:
     uint8_t max_bpm_history_pos_ = 0;
     uint8_t max_bpm_history_count_ = 0;
 
+    static constexpr uint8_t SPO2_BUFFER_SIZE = 100;
+    static constexpr uint8_t SPO2_STEP_SIZE = 25;
+    static constexpr uint8_t SPO2_DECIMATION = 4;
+
+    uint32_t spo2_ired_buffer_[SPO2_BUFFER_SIZE] = {0};
+    uint32_t spo2_red_buffer_[SPO2_BUFFER_SIZE] = {0};
+
+    uint8_t spo2_sample_count_ = 0;
+    uint8_t spo2_decimation_count_ = 0;
+
+    void process_spo2_sample(uint32_t red, uint32_t ired);
+    void reset_spo2_state();
+    
     esp_err_t init_bus();
 
     esp_err_t init_mlx();

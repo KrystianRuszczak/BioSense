@@ -9,6 +9,9 @@ idf_component_register(
         "telemetry/telemetry.cpp"
         "sensors/i2c_sensors.cpp"
         "third_party/max3010x_algorithms/heartRate.cpp"
+        "third_party/max3010x_algorithms/spo2.cpp"
+        "io/leds.cpp"
+        "io/buzzer.cpp"
 
     INCLUDE_DIRS
         "include"
@@ -22,9 +25,12 @@ idf_component_register(
         nvs_flash
         esp_adc
         esp_driver_gpio
+        esp_driver_ledc
+        esp_driver_i2c
         lwip
         esp_timer
-        esp_driver_i2c
+        led_strip
+        
 )
 
 set_property(TARGET ${COMPONENT_LIB} PROPERTY CXX_STANDARD 17)
