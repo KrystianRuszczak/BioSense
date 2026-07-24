@@ -10,7 +10,7 @@ int format_telemetry_csv(char* buffer, size_t buffer_size, const telemetry_frame
     return std::snprintf(
         buffer,
         buffer_size,
-        "%lu,%d,%d,%u,%d,%d,%d,%.2f,%.2f,%.2f,%d,%.1f,%d,%d,%d,%d,%d\n",
+        "%lu,%d,%d,%u,%d,%d,%d,%.3f,%u,%.3f,%.3f,%d,%.1f,%d,%d,%d,%d,%d,%u,%u\n",
         static_cast<unsigned long>(frame.sample),
         frame.raw_ecg,
         frame.filtered_ecg,
@@ -19,6 +19,7 @@ int format_telemetry_csv(char* buffer, size_t buffer_size, const telemetry_frame
         frame.ecg_leads_off ? 1 : 0,
         frame.gsr_adc,
         frame.batt_v,
+        static_cast<unsigned>(frame.batt_percent),
         frame.temp_amb,
         frame.temp_obj,
         frame.max_bpm,
@@ -27,7 +28,9 @@ int format_telemetry_csv(char* buffer, size_t buffer_size, const telemetry_frame
         frame.spo2_raw,
         frame.max_finger ? 1 : 0,
         frame.max_red,
-        frame.max_ired
+        frame.max_ired,
+        static_cast<unsigned>(frame.ui_event),
+        static_cast<unsigned>(frame.ui_flags)
     );
 }
 

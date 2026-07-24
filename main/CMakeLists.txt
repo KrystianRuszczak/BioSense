@@ -3,15 +3,18 @@ idf_component_register(
         "main.cpp"
         "net/wifi_sta.cpp"
         "net/udp_sender.cpp"
+        "net/mqtt_sender.cpp"
         "sensors/adc_sensors.cpp"
         "sensors/i2c_sensors.cpp"
         "signal/ecg_processor.cpp"
         "telemetry/telemetry.cpp"
-        "sensors/i2c_sensors.cpp"
         "third_party/max3010x_algorithms/heartRate.cpp"
         "third_party/max3010x_algorithms/spo2.cpp"
+        "ui/ui_state.cpp"
         "io/leds.cpp"
         "io/buzzer.cpp"
+        "io/buttons.cpp"
+        "power/battery_soc.cpp"
 
     INCLUDE_DIRS
         "include"
@@ -30,7 +33,9 @@ idf_component_register(
         lwip
         esp_timer
         led_strip
-        
+        freertos
+        mqtt
+        mbedtls
 )
 
 set_property(TARGET ${COMPONENT_LIB} PROPERTY CXX_STANDARD 17)

@@ -21,6 +21,9 @@ private:
     float batt_voltage_from_raw(int raw) const;
     void* adc1_handle_ = nullptr;
 
+    void* batt_cali_handle_ = nullptr;
+    bool batt_cali_ready_ = false;
+
 public:
     esp_err_t init();
     

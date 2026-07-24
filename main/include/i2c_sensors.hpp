@@ -41,6 +41,8 @@ public:
     esp_err_t update(uint64_t now_ms);
 
     const i2c_readings& readings() const;
+
+    void reset_processing();
 private:
 
     uint64_t max_last_beat_ms_ = 0;

@@ -62,5 +62,14 @@ ecg_result ecg_processor::process(int raw_adc, bool leads_off, uint64_t now_ms)
     return result;
 }
 
+void ecg_processor::reset()
+{
+    filtered_ = 2048.0f;
+    signal_min_ = 4095.0f;
+    signal_max_ = 0.0f;
+    last_peak_ms_ = 0;
+    bpm_ = 0;
+}
+
 } // namespace biosense
 

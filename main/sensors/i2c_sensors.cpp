@@ -527,4 +527,24 @@ esp_err_t i2c_sensors::read_regs(i2c_master_dev_handle_t dev, uint8_t reg, uint8
     return i2c_master_transmit_receive(dev, &reg, 1, data, len, 100);
 }
 
+void i2c_sensors::reset_processing()
+{
+    readings_.max_bpm = 0;
+    readings_.max_spo2 = 0.0f;
+    readings_.max_spo2_raw = 0;
+    readings_.max_spo2_valid = false;
+
+    max_last_beat_ms_ = 0;
+    max_bpm_history_pos_ = 0;
+    max_bpm_history_count_ = 0;
+
+    for (uint8_t i = 0; i < MAX_BPM_AVG_SIZE; i++)
+    {
+        max_bpm_history_[i] = 0;
+    }
+    
+    resetBeatDetector();
+    reset_spo2_state();
+}
+
 } // namespace biosense

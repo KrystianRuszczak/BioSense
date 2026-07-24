@@ -8,39 +8,6 @@
 
 static const char* TAG = "leds";
 
-static constexpr float BATT_FULL = 4.05f;
-static constexpr float BATT_HIGH = 3.85f;
-static constexpr float BATT_MED = 3.65f;
-static constexpr float BATT_LOW = 3.45f;
-static constexpr float BATT_CRIT = 3.30f;
-
-struct battery_point
-{
-    float voltage;
-    uint8_t percent;
-};
-
-static constexpr battery_point BATTERY_TABLE[] = {
-    {4.20f, 100},
-    {4.10f, 90},
-    {4.00f, 80},
-    {3.90f, 65},
-    {3.80f, 50},
-    {3.70f, 35},
-    {3.60f, 20},
-    {3.50f, 10},
-    {3.40f, 5},
-    {3.30f, 0},
-};
-
-static constexpr uint8_t BATTERY_TABLE_SIZE = sizeof(BATTERY_TABLE) / sizeof(BATTERY_TABLE[0]);
-
-static uint8_t battery_voltage_to_percent(float batt_v)
-{
-    // TO BE IMPLEMENTED
-    return 0;
-}
-
 namespace biosense
 {
 
@@ -117,30 +84,30 @@ esp_err_t leds::refresh()
     return led_strip_refresh(handle);
 }
 
-void leds::voltage_to_led_count_and_color(float batt_v, uint8_t& count, uint8_t& r, uint8_t& g, uint8_t& b)
+void leds::percent_to_led_count_and_color(uint8_t percent, uint8_t& count, uint8_t& r, uint8_t& g, uint8_t& b)
 {
-    if (batt_v >= BATT_FULL)
+    if (percent >= 75)
     {
         count = 4;
         r = 0;
         g = 20;             // Low brightness 20/255
         b = 0;
     }
-    else if (batt_v >= BATT_HIGH)
+    else if (percent >= 50)
     {
         count = 3;
         r = 4;
         g = 20;
         b = 0;
     }
-    else if (batt_v >= BATT_MED)
+    else if (percent >= 25)
     {
         count = 2;
         r = 20;
         g = 12;
         b = 0;
     }
-    else if (batt_v >= BATT_LOW)
+    else if (percent >= 10)
     {
         count = 1;
         r = 20;
@@ -156,14 +123,14 @@ void leds::voltage_to_led_count_and_color(float batt_v, uint8_t& count, uint8_t&
     }
 }
 
-esp_err_t leds::set_battery_level(float batt_v)
+esp_err_t leds::set_battery_level(uint8_t percent)
 {
     uint8_t count = 0;
     uint8_t r = 0;
     uint8_t g = 0;
     uint8_t b = 0;
 
-    voltage_to_led_count_and_color(batt_v, count, r, g, b);
+    percent_to_led_count_and_color(percent, count, r, g, b);
 
     for (uint8_t i = 0; i < NUM_LEDS; i++)
     {

@@ -24,6 +24,8 @@ private:
     unsigned bpm_ = 0;
 public:
     ecg_result process(int raw_adc, bool leads_off, uint64_t now_ms);
+
+    void reset();
 };
 
 } // namespace biosense

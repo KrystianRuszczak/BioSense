@@ -18,6 +18,7 @@ struct telemetry_frame
 
     int gsr_adc = 0;
     float batt_v = 0.0f;
+    uint8_t batt_percent;
 
     float temp_amb = 0.0f;
     float temp_obj = 0.0f;
@@ -29,6 +30,9 @@ struct telemetry_frame
     bool max_finger = false;
     int max_red = 0;
     int max_ired = 0;
+
+    uint8_t ui_event = 0;
+    uint8_t ui_flags = 0;
 };
 
 int format_telemetry_csv(char* buffer, size_t buffer_size, const telemetry_frame& frame);
