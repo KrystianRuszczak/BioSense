@@ -1,6 +1,8 @@
 #include "adc_sensors.hpp"
 
 #include "biosense_config.hpp"
+#include "gsr_model.hpp"
+#include "sensor_config.hpp"
 
 #include "esp_log.h"
 #include "driver/gpio.h"
@@ -77,32 +79,63 @@ esp_err_t adc_sensors::init()
     return ESP_OK;
 }
 
-int adc_sensors::read_channel(int channel)
+esp_err_t adc_sensors::read_channel(int channel, int& raw)
 {
     auto handle = static_cast<adc_oneshot_unit_handle_t>(adc1_handle_);
 
-    int raw = 0;
-    esp_err_t err = adc_oneshot_read(handle, static_cast<adc_channel_t>(channel), &raw);
+    raw = 0;
+
+    const esp_err_t err = adc_oneshot_read(handle, static_cast<adc_channel_t>(channel), &raw);
 
     if (err != ESP_OK)
     {
-        ESP_LOGW(TAG, "ADC read failed: %s", esp_err_to_name(err));
-        return 0;
+        ESP_LOGW(TAG, "ADC read failed on channel %d: %s", channel, esp_err_to_name(err));
+        raw = 0;
+        return err;
     }
 
-    return raw;
+    return ESP_OK;
 }
 
 int adc_sensors::read_gsr_raw()
 {
-    return read_channel(ADC_CH_GSR);
+    int raw = 0;
+    if (read_channel(ADC_CH_GSR, raw) != ESP_OK)
+    {
+        return 0;
+    }
+    
+    return raw;
+}
+
+gsr_reading adc_sensors::read_gsr()
+{
+    int raw = 0;
+
+    if (read_channel(ADC_CH_GSR, raw) != ESP_OK)
+    {
+        return {};
+    }
+    
+    return convert_gsr_raw(static_cast<uint16_t>(raw), GSR_CONFIG);
 }
 
 int adc_sensors::read_ecg_raw()
 {
-    int a = read_channel(ADC_CH_ECG);
-    int b = read_channel(ADC_CH_ECG);
-    return (a+b) >> 1;
+    int first_raw = 0;
+    int second_raw = 0;
+
+    if (read_channel(ADC_CH_ECG, first_raw) != ESP_OK)
+    {
+        return 0;
+    }
+    
+    if (read_channel(ADC_CH_ECG, second_raw) != ESP_OK)
+    {
+        return first_raw;
+    }
+    
+    return (first_raw + second_raw) >> 1;
 }
 
 bool adc_sensors::leads_off() const
@@ -113,13 +146,25 @@ bool adc_sensors::leads_off() const
 int adc_sensors::read_batt_raw()
 {
     int32_t sum = 0;
+    int successful_samples = 0;
 
     for (int i = 0; i < BATT_SAMPLE_COUNT; i++)
     {
-        sum += read_channel(ADC_CH_BATT);
+        int raw = 0;
+        if (read_channel(ADC_CH_BATT, raw) == ESP_OK)
+        {
+            sum += raw;
+            ++successful_samples;
+        }
+    }
+
+    if (successful_samples == 0)
+    {
+        ESP_LOGW(TAG, "All battery ADC reads failed");
+        return 0;
     }
     
-    return static_cast<int>(sum / BATT_SAMPLE_COUNT);
+    return static_cast<int>(sum / successful_samples);
 }
 
 float adc_sensors::read_batt_voltage()

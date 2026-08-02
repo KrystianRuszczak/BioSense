@@ -30,6 +30,16 @@
 #define ECG_RPEAK_REFRACTORY_MS 300
 // #define SAMPLE_INTERVAL (1000000UL / SAMPLE_RATE_HZ)
 
+// GSR PARAMETERS   
+
+#define GSR_SAMPLE_RATE_HZ 10
+#define GSR_SAMPLE_INTERVAL_SAMPLES (ECG_SAMPLE_RATE_HZ / GSR_SAMPLE_RATE_HZ)
+
+static_assert(
+    ECG_SAMPLE_RATE_HZ % GSR_SAMPLE_RATE_HZ == 0,
+    "ECG sample rate must be divisible by GSR sample rate"
+);
+
 // UDP PARAMETERS
 
 #define UDP_BATCH_SIZE 5

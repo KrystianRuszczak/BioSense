@@ -17,8 +17,13 @@ struct telemetry_frame
     bool ecg_leads_off = true;
 
     int gsr_adc = 0;
+    float gsr_resistance_ohm = 0.0f;
+    float gsr_conductance_us = 0.0f;
+    bool gsr_valid = false;
+    uint16_t gsr_calibration_raw = 0;
+
     float batt_v = 0.0f;
-    uint8_t batt_percent;
+    uint8_t batt_percent = 0;
 
     float temp_amb = 0.0f;
     float temp_obj = 0.0f;

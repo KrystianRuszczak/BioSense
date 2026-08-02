@@ -6,6 +6,7 @@ idf_component_register(
         "net/mqtt_sender.cpp"
         "sensors/adc_sensors.cpp"
         "sensors/i2c_sensors.cpp"
+        "sensors/gsr_model.cpp"
         "signal/ecg_processor.cpp"
         "telemetry/telemetry.cpp"
         "third_party/max3010x_algorithms/heartRate.cpp"
