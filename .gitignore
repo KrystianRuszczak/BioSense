@@ -28,3 +28,5 @@ venv/
 .DS_Store
 Thumbs.db
 *.swp
+
+hardware/biosense_pcb/JLCPCB.kicad_dru
