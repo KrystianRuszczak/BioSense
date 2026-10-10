@@ -14,7 +14,7 @@ BioSense is an experimental biosignal acquisition platform built around an ESP32
 
 ## Hardware
 
-The firmware is configured for the classic ESP32. The KiCad schematics, PCB design, and design rules: [`hardware/biosense_pcb/`](hardware/biosense_pcb/). See the [hardware README](hardware/biosense_pcb/README.md) for more information about the board and its main components.
+The firmware is configured for the classic ESP32. The KiCad schematics, PCB design: [`hardware/biosense_pcb/`](hardware/biosense_pcb/). See the [hardware README](hardware/biosense_pcb/README.md) for more information about the board and its main components.
 
 The main GPIO assignments: [`main/include/biosense_config.hpp`](main/include/biosense_config.hpp):
 
@@ -102,6 +102,8 @@ Biosignal measurements may be sensitive. Secure your broker, network, and data s
 
 ## License
 
-The original BioSense firmware and software are licensed under the MIT License. See the [LICENSE](LICENSE) file.
+The original BioSense firmware and software are licensed under the MIT License. See [LICENSE](LICENSE).
 
-Third-party software is excluded from this license and remains under its respective license. In particular, the MAX3010x algorithms in `main/third_party/max3010x_algorithms/` are distributed under the license included in that directory.
+The hardware design files in `hardware/biosense_pcb/` are licensed under CERN-OHL-P-2.0. See the [hardware license](hardware/biosense_pcb/LICENSE).
+
+Third-party software retains its respective license. The MAX3010x algorithms are covered by the license files in [`main/third_party/max3010x_algorithms/`](main/third_party/max3010x_algorithms/).
